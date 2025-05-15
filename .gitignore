@@ -1,0 +1,9 @@
+.vscode
+website/__pycache__
+website/database.db
+instance/
+venv/
+*.pyc
+__pycache__/
+.env
+.DS_Store

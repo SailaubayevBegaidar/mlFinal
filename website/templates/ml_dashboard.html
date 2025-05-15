@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}ML Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Machine Learning Dashboard</h1>
+    
+    <!-- Model Training Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Train Logistic Regression Model</h3>
+        </div>
+        <div class="card-body">
+            <form id="trainForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="trainingFile" class="form-label">Training Data (CSV)</label>
+                    <input type="file" class="form-control" id="trainingFile" name="file" accept=".csv" required>
+                    <small class="text-muted">CSV file should contain features and a 'target' column with binary values (0/1)</small>
+                </div>
+                <button type="submit" class="btn btn-primary">Train Model</button>
+            </form>
+            
+            <!-- Training Results -->
+            <div id="trainingResults" class="mt-4" style="display: none;">
+                <h4>Training Results</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metricsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prediction Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Make Predictions</h3>
+        </div>
+        <div class="card-body">
+            <form id="predictForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="predictionFile" class="form-label">Input Data (CSV)</label>
+                    <input type="file" class="form-control" id="predictionFile" name="file" accept=".csv" required>
+                    <small class="text-muted">CSV file should contain the same features as training data</small>
+                </div>
+                <button type="submit" class="btn btn-success">Generate Predictions</button>
+            </form>
+
+            <!-- Prediction Results -->
+            <div id="predictionResults" class="mt-4" style="display: none;">
+                <h4>Predictions</h4>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Index</th>
+                                <th>Prediction</th>
+                                <th>Probability</th>
+                            </tr>
+                        </thead>
+                        <tbody id="predictionsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for handling form submissions -->
+<script>
+document.getElementById('trainForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('/train-model', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Display metrics
+            const metricsTable = document.getElementById('metricsTable');
+            metricsTable.innerHTML = '';
+            for (const [metric, value] of Object.entries(data.metrics)) {
+                metricsTable.innerHTML += `
+                    <tr>
+                        <td>${metric}</td>
+                        <td>${value.toFixed(4)}</td>
+                    </tr>
+                `;
+            }
+            document.getElementById('trainingResults').style.display = 'block';
+            alert('Model trained successfully!');
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        alert('Error training model: ' + error);
+    }
+});
+
+document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Display predictions
+            const predictionsTable = document.getElementById('predictionsTable');
+            predictionsTable.innerHTML = '';
+            data.predictions.forEach((pred, idx) => {
+                predictionsTable.innerHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${pred}</td>
+                        <td>${data.probabilities[idx].toFixed(4)}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('predictionResults').style.display = 'block';
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        alert('Error making predictions: ' + error);
+    }
+});
+</script>
+{% endblock %} 
